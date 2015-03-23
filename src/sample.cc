@@ -89,7 +89,7 @@ train_cnn(){
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgHeight, imgWidth);
     // Train network using Back Propogation
     trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr, testX, testY, wordvec);
-    testNetwork(testData, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap);
+    testNetwork(testData, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap, true);
 
     saveConvLayer(ConvLayers, "kernel/");
     save2XML("network/", "info_80", ConvLayers, HiddenLayers, smr, re_resolmap);
@@ -131,7 +131,9 @@ NER_cnn(){
     std::vector<string> re_resolmap;
     ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgHeight, imgWidth);
     readFromXML("network/info_80.xml", ConvLayers, HiddenLayers, smr, re_resolmap);
-    sentenceNER(sentence, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap);
+    sentenceNER(sentence, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap, true);
+    ConvLayers.clear();
+    HiddenLayers.clear();
 
     end = clock();
     cout<<"Totally used time: "<<((double)(end - start)) / CLOCKS_PER_SEC<<" second"<<endl;
@@ -158,6 +160,36 @@ NER_mitie(){
     end = clock();
     cout<<"Totally used time: "<<((double)(end - start)) / CLOCKS_PER_SEC<<" second"<<endl;
 }
+/*
+void fun_for_debug(){
+
+    readConfigFile("config.txt", false);
+    unordered_map<string, Mat> wordvec;
+    readWordvec("dataset/wordvecs.txt", wordvec);
+    cout<<"Successfully read wordvecs, map size is "<<wordvec.size()<<endl;
+
+    std::vector<std::vector<singleWord> > trainData;
+    std::vector<std::vector<singleWord> > testData;
+    readDataset("dataset/news_tagged_data.txt", trainData, testData);
+    cout<<"Successfully read dataset, training data size is "<<trainData.size()<<", test data size is "<<testData.size()<<endl;
+
+    int imgHeight = nGram;
+    int imgWidth = word_vec_len;
+    std::vector<Cvl> ConvLayers;
+    std::vector<Fcl> HiddenLayers;
+    Smr smr;
+    std::vector<string> re_resolmap;
+    ConvNetInitPrarms(ConvLayers, HiddenLayers, smr, imgHeight, imgWidth);
+    readFromXML("network/info_80.xml", ConvLayers, HiddenLayers, smr, re_resolmap);
+    
+    testNetwork(testData, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap, true);
+    testNetwork(testData, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap, false);
+    ConvLayers.clear();
+    HiddenLayers.clear();
+    trainData.clear();
+}
+*/
+
 
 int 
 main(int argc, char** argv){

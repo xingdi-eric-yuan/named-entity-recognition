@@ -4,7 +4,7 @@ using namespace std;
 
 void 
 breakString(string str, std::vector<string> &vec){
-
+    vec.clear();
     int head = 0;
     int tail = 0;
     while(true){
