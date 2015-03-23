@@ -44,6 +44,38 @@ resultPredict(const std::vector<Mat> &x, const std::vector<Cvl> &CLayers, const 
     return result;
 }
 
+Mat 
+getProbMatrix(const std::vector<Mat> &x, const std::vector<Cvl> &CLayers, const std::vector<Fcl> &hLayers, const Smr &smr){
+ 
+    int nsamples = x.size();
+    // Conv & Pooling
+    std::vector<std::vector<Mat> > conved;
+    convAndPooling(x, CLayers, conved);
+    Mat convolvedX = concatenateMat(conved);
+
+    // full connected layers
+    std::vector<Mat> hidden;
+    hidden.push_back(convolvedX);
+    for(int i = 1; i <= fcConfig.size(); i++){
+        Mat tmpacti = hLayers[i - 1].W * hidden[i - 1] + repeat(hLayers[i - 1].b, 1, convolvedX.cols);
+//        tmpacti = sigmoid(tmpacti);
+        tmpacti = ReLU(tmpacti);
+        if(fcConfig[i - 1].DropoutRate < 1.0) tmpacti = tmpacti.mul(fcConfig[i - 1].DropoutRate);
+        hidden.push_back(tmpacti);
+    }
+    Mat M = smr.W * hidden[hidden.size() - 1] + repeat(smr.b, 1, nsamples);
+    // destructor
+    for(int i = 0; i < conved.size(); i++){
+        conved[i].clear();
+    }
+    conved.clear();
+    std::vector<std::vector<Mat> >().swap(conved);
+    hidden.clear();
+    std::vector<Mat>().swap(hidden);
+    convolvedX.release();
+    return M;
+}
+
 void 
 labelJudgement(const Mat &m, std::vector<string> &re_resolmap, std::vector<string> &labels){
     labels.clear();
@@ -51,16 +83,7 @@ labelJudgement(const Mat &m, std::vector<string> &re_resolmap, std::vector<strin
     std::vector<string> tmpvec;
     for(int i = 0; i < m.cols; i++){
         string str = re_resolmap[m.ATD(0, i)];
-        int head = 0;
-        int tail = 0;
-        while(true){
-            if(head >= str.length()) break;
-            if(str[tail] == ','){
-                tmpvec.push_back(str.substr(head, tail - head));
-                head = tail + 1;
-                tail = head;
-            }else ++ tail;
-        }
+        breakString(str, tmpvec);
         resol.push_back(tmpvec);
         tmpvec.clear();
     }
@@ -76,6 +99,37 @@ labelJudgement(const Mat &m, std::vector<string> &re_resolmap, std::vector<strin
     for(int i = 0; i < length; i++) labels.push_back(getMajoriryElem(vec[i]));
 }
 
+void 
+labelJudgement2(const Mat &M, std::vector<string> &re_resolmap, std::vector<string> &labels){
+
+    labels.clear();
+    Mat _max = Mat::zeros(1, M.cols, CV_64FC1);
+    Mat _prob = Mat::zeros(1, M.cols, CV_64FC1);
+    double minValue, maxValue;
+    Point minLoc, maxLoc;
+    for(int i = 0; i < M.cols; i++){
+        minMaxLoc(M(Rect(i, 0, 1, M.rows)), &minValue, &maxValue, &minLoc, &maxLoc);
+        _max.ATD(0, i) = (int) maxLoc.y;
+        _prob.ATD(0, i) = M.ATD(maxLoc.y, i);
+    }
+    std::vector<string> tmpvec;
+    int length = M.cols + nGram - 1;
+    for(int i = 0; i < length; i++){
+        string str;
+        double prob_max = (double)INT_MIN;
+        for(int j = i - nGram + 1; j <= i; j++){
+            if(j < 0 || (j + nGram - 1 >= length)) continue;
+            str = re_resolmap[_max.ATD(0, j)];
+            breakString(str, tmpvec);
+            if(_prob.ATD(0, j) > prob_max){
+                prob_max = _prob.ATD(0, j);
+                str = tmpvec[i - j];
+            }
+            tmpvec.clear();
+        }
+        labels.push_back(str);
+    }
+}
 
 void 
 sentenceNER(const std::vector<std::string> &sentence, std::vector<Cvl> &CLayers, std::vector<Fcl> &hLayers, Smr &smr, std::unordered_map<string, Mat> &wordvec, std::vector<string> &re_resolmap){
@@ -91,8 +145,11 @@ sentenceNER(const std::vector<std::string> &sentence, std::vector<Cvl> &CLayers,
         x.push_back(vec2Mat(resol[i], wordvec));
     }
     Mat result = resultPredict(x, CLayers, hLayers, smr);
+    //Mat result = getProbMatrix(x, CLayers, hLayers, smr);
+    cout<<result<<endl;
     std::vector<std::string> labels;
     labelJudgement(result, re_resolmap, labels);
+    //labelJudgement2(result, re_resolmap, labels);
     for(int i = 0; i < labels.size(); i++){
         cout<<sentence[i]<<" : "<<labels[i]<<endl;
     }
@@ -112,8 +169,10 @@ sentenceNER(const std::vector<singleWord> &sentence, std::vector<Cvl> &CLayers, 
         x.push_back(vec2Mat(resol[i], wordvec));
     }
     Mat result = resultPredict(x, CLayers, hLayers, smr);
+    // Mat result = getProbMatrix(x, CLayers, hLayers, smr);
     std::vector<std::string> labels;
     labelJudgement(result, re_resolmap, labels);
+    // labelJudgement2(result, re_resolmap, labels);
     for(int i = 0; i < labels.size(); i++){
         cout<<sentence[i].word<<" : "<<labels[i]<<", "<<num2label(sentence[i].label)<<endl;
     }
@@ -136,8 +195,10 @@ testNetwork(const std::vector<std::vector<singleWord> > &testData, std::vector<C
             x.push_back(vec2Mat(resol[i], wordvec));
         }
         Mat result = resultPredict(x, CLayers, hLayers, smr);
+        // Mat result = getProbMatrix(x, CLayers, hLayers, smr);
         std::vector<std::string> labels;
         labelJudgement(result, re_resolmap, labels);
+        // labelJudgement2(result, re_resolmap, labels);
         for(int i = 0; i < labels.size(); i++){
             if(labels[i].compare(num2label(testData[s][i].label)) == 0) ++correct;
         }

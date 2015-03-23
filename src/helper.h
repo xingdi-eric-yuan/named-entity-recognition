@@ -3,6 +3,8 @@
 
 using namespace std;
 
+
+void breakString(string , std::vector<string> &);
 string getMajoriryElem(std::vector<string> &);
 // label - number look up tables
 int label2num(std::string);

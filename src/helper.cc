@@ -2,7 +2,23 @@
 
 using namespace std;
 
-string getMajoriryElem(std::vector<string> &vec){
+void 
+breakString(string str, std::vector<string> &vec){
+
+    int head = 0;
+    int tail = 0;
+    while(true){
+        if(head >= str.length()) break;
+        if(str[tail] == ','){
+            vec.push_back(str.substr(head, tail - head));
+            head = tail + 1;
+            tail = head;
+        }else ++ tail;
+    }
+}
+
+string 
+getMajoriryElem(std::vector<string> &vec){
     if(vec.size() <= 2) return vec[0];
     unordered_map<string, int> map;
     for(int i = 0; i < vec.size(); i++){
