@@ -5,18 +5,31 @@ Using both MITIE library and Convnet.
 
 To run this code, you should have 
 * OpenCV
-* MITIE lib & dlib (already contained, new version can be found in [MITIE github](https://github.com/mit-nlp/MITIE))
+* MITIE lib & dlib (new version can be found in [MITIE github](https://github.com/mit-nlp/MITIE))
 
 ##Compile & Run
 
-* Compile: "cmake ." and then "make" 
- 
-* Run: "./NER x"
-where x is run mode:
-1 : Train mitie
-2 : Train convolutional neural networks
-3 : Do named entity recognition using mitie
-4 : Do named entity recognition using convolutional neural networks
+* Download MITIE and install mitie models by running:
+```
+make MITIE-models
+```
+* put ```mitielib``` folder and ```dlib``` into ```named-entity-recognition``` folder
+* put ```MITIE-models/english/total_word_feature_extractor.dat``` into ```./network``` folder
+
+* Compile by running:
+```
+cmake .
+make
+```
+* Run: 
+```
+./NER x
+```
+* where x is run mode:
+  - 1: Train mitie
+  - 2: Train convolutional neural networks
+  - 3: Do named entity recognition using mitie
+  - 4: Do named entity recognition using convolutional neural networks
 
 ##Structure and Algorithm
 See [my tech-blog](http://eric-yuan.me/ner_1).
