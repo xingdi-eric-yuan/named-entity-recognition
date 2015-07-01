@@ -91,6 +91,8 @@ train_cnn(){
     trainNetwork(trainX, trainY, ConvLayers, HiddenLayers, smr, testX, testY, wordvec);
     testNetwork(testData, ConvLayers, HiddenLayers, smr, wordvec, re_resolmap, true);
 
+    string tmpstr = "kernel";
+    mkdir(tmpstr.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     saveConvLayer(ConvLayers, "kernel/");
     save2XML("network/", "info_80", ConvLayers, HiddenLayers, smr, re_resolmap);
     ConvLayers.clear();
